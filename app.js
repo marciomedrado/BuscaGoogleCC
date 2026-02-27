@@ -128,6 +128,9 @@ async function performSearch(query, offset = 0, isLoadMore = false) {
         loadMoreBtn.disabled = true;
     } else {
         resultsContainer.innerHTML = '';
+        // Rolar para o topo da área de resultados
+        document.querySelector('.main-content').scrollTop = 0;
+
         for (let i = 0; i < 6; i++) {
             const skeletonCard = document.createElement('div');
             skeletonCard.className = 'image-card skeleton';
