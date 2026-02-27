@@ -351,7 +351,7 @@ function enterReviewMode() {
         const queueImg = imageQueue[index];
 
         return `
-                <div class="review-row">
+                <div class="review-row" id="review-row-${index}">
                     <div class="review-cell cell-num">${termNum}</div>
                     <div class="review-cell cell-term">${termObj.text}</div>
                     <div class="review-cell cell-image" 
@@ -378,6 +378,18 @@ function enterReviewMode() {
     }).join('')}
         </div>
     `;
+
+    // Rola para a imagem que estava sendo revisada se houver um vínculo ativo
+    if (sourceTermIndex !== -1) {
+        setTimeout(() => {
+            const row = document.getElementById(`review-row-${sourceTermIndex}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.style.boxShadow = '0 0 15px rgba(56, 189, 248, 0.4)';
+                setTimeout(() => row.style.boxShadow = '', 2000);
+            }
+        }, 100);
+    }
 }
 
 async function autoFillQueue() {
