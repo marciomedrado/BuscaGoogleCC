@@ -43,6 +43,11 @@ const clearSearchBtn = document.getElementById('clearSearchBtn');
 const clearTermsBtn = document.getElementById('clearTermsBtn');
 const clearQueueBtn = document.getElementById('clearQueueBtn');
 
+let lastFindIndex = -1;
+
+document.getElementById('replaceNextBtn').addEventListener('click', findAndReplaceNext);
+document.getElementById('replaceAllBtn').addEventListener('click', findAndReplaceAll);
+
 searchInput.addEventListener('input', () => {
     clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
 });
@@ -637,6 +642,47 @@ function handleBackupImport(e) {
         e.target.value = ''; // Reset input
     };
     reader.readAsText(file);
+}
+
+// Localizar e Substituir
+function findAndReplaceNext() {
+    const findText = document.getElementById('findInput').value.trim();
+    const replaceText = document.getElementById('replaceInput').value.trim();
+    if (!findText) return;
+
+    for (let i = lastFindIndex + 1; i < importedTerms.length; i++) {
+        if (importedTerms[i].text.includes(findText)) {
+            importedTerms[i].text = importedTerms[i].text.replace(findText, replaceText);
+            lastFindIndex = i;
+            renderTerms();
+            return;
+        }
+    }
+
+    // Se não encontrou do ponto atual, tentar do início (opcional) ou resetar
+    lastFindIndex = -1;
+    alert("Nenhuma ocorrência encontrada.");
+}
+
+function findAndReplaceAll() {
+    const findText = document.getElementById('findInput').value.trim();
+    const replaceText = document.getElementById('replaceInput').value.trim();
+    if (!findText) return;
+
+    let count = 0;
+    importedTerms.forEach(term => {
+        if (term.text.includes(findText)) {
+            term.text = term.text.split(findText).join(replaceText);
+            count++;
+        }
+    });
+
+    if (count > 0) {
+        renderTerms();
+        alert(`${count} ocorrências substituídas.`);
+    } else {
+        alert("Nenhuma ocorrência encontrada.");
+    }
 }
 
 // Botão Voltar ao Topo

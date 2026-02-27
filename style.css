@@ -286,6 +286,38 @@ body {
     display: none;
 }
 
+.find-replace-container {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.find-replace-container input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 0.5rem;
+    color: white;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.find-replace-container input:focus {
+    border-color: var(--accent-color);
+}
+
+.find-replace-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.find-replace-actions button {
+    flex: 1;
+}
+
 /* Adicionar à Fila Styles */
 .queue-item {
     position: relative;
