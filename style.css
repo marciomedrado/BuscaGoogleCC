@@ -94,6 +94,17 @@ body {
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
     transition: background 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.term-item.status-searched {
+    border-left: 3px solid var(--accent-color);
+    background: rgba(56, 189, 248, 0.1);
+}
+
+.term-item.status-queued {
+    border-left: 3px solid #22c55e;
+    background: rgba(34, 197, 94, 0.1);
 }
 
 .term-item:hover {
@@ -105,6 +116,37 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    margin-right: 5px;
+    padding: 2px 5px;
+    border-bottom: 1px dashed transparent;
+    cursor: text;
+    outline: none;
+}
+
+.term-item span:focus {
+    border-bottom: 1px solid var(--accent-color);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.term-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.remove-term-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.remove-term-btn:hover {
+    color: #f87171;
 }
 
 .compact-btn {
@@ -141,11 +183,32 @@ body {
     margin-bottom: 1rem;
     border-radius: 0.5rem;
     overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .queue-item img {
     width: 100%;
     display: block;
+}
+
+.queue-info {
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.queue-title {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+
+.queue-term {
+    font-size: 0.7rem;
+    color: var(--accent-color);
+    margin-top: 2px;
 }
 
 .remove-from-queue {

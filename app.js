@@ -4,6 +4,7 @@
 let currentQuery = '';
 let currentOffset = 0;
 let imageQueue = [];
+let importedTerms = []; // Structure: { text: "term", status: "idle" | "searched" | "queued" }
 
 // Event Listeners
 document.getElementById('searchBtn').addEventListener('click', startSearch);
@@ -27,6 +28,14 @@ function startSearch() {
         currentQuery = query;
         currentOffset = 0;
         document.getElementById('loadMoreContainer').style.display = 'none';
+
+        // Match term from imported list if it exists and update status
+        const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === query.toLowerCase());
+        if (termIndex !== -1 && importedTerms[termIndex].status === 'idle') {
+            importedTerms[termIndex].status = 'searched';
+            renderTerms();
+        }
+
         performSearch(query, currentOffset);
     }
 }
@@ -49,7 +58,7 @@ async function performSearch(query, offset = 0, isLoadMore = false) {
         }
     }
 
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=16&gsroffset=${offset}&prop=imageinfo&iiprop=url|extmetadata&format=json&origin=*`;
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=16&gsroffset=${offset}&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=400&format=json&origin=*`;
 
     try {
         const response = await fetch(url);
@@ -61,7 +70,7 @@ async function performSearch(query, offset = 0, isLoadMore = false) {
                 const info = page.imageinfo ? page.imageinfo[0] : {};
                 const license = info.extmetadata?.LicenseShortName?.value || 'CC BY-SA';
                 const cleanTitle = page.title.replace(/^File:/, '').replace(/\.[^/.]+$/, "").replace(/_/g, ' ');
-                return { link: info.url, title: cleanTitle, license: license };
+                return { link: info.url, thumb: info.thumburl || info.url, title: cleanTitle, license: license };
             }).filter(img => img.link && !img.link.endsWith('.ogg') && !img.link.endsWith('.webm'));
 
             if (images.length > 0) {
@@ -93,19 +102,21 @@ function displayResults(images, append = false) {
     images.forEach(img => {
         const isAdded = imageQueue.some(item => item.link === img.link);
         const card = document.createElement('div');
+        const safeTitle = img.title.replace(/'/g, "\\'");
+        const safeQuery = currentQuery.replace(/'/g, "\\'");
         card.className = 'image-card';
         card.innerHTML = `
             <div class="image-container">
                 <span class="cc-badge" title="${img.license}">${img.license.length > 12 ? 'CC' : img.license}</span>
-                <img src="${img.link}" alt="${img.title}" loading="lazy">
+                <img src="${img.thumb}" alt="${img.title}" loading="lazy">
             </div>
             <div class="card-info">
                 <h3 title="${img.title}">${img.title}</h3>
                 <div class="actions-container">
-                    <button class="queue-btn ${isAdded ? 'added' : ''}" onclick="toggleQueue(this, '${img.link}', '${img.title.replace(/'/g, "\\'")}')">
+                    <button class="queue-btn ${isAdded ? 'added' : ''}" onclick="toggleQueue(this, '${img.link}', '${img.thumb}', '${safeTitle}', '${safeQuery}')">
                         ${isAdded ? 'No Carrinho' : 'Adicionar à Fila'}
                     </button>
-                    <button class="direct-download-btn" onclick="downloadImage('${img.link}', '${img.title.replace(/'/g, "\\'")}')" title="Baixar Imagem">
+                    <button class="direct-download-btn" onclick="downloadImage('${img.link}', '${safeTitle}')" title="Baixar Imagem">
                         <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                     </button>
                 </div>
@@ -116,18 +127,36 @@ function displayResults(images, append = false) {
 }
 
 // Gerenciamento da Fila
-function toggleQueue(btn, link, title) {
+function toggleQueue(btn, link, thumb, title, term) {
     const index = imageQueue.findIndex(item => item.link === link);
     if (index === -1) {
-        imageQueue.push({ link, title });
+        imageQueue.push({ link, thumb, title, term });
         btn.classList.add('added');
         btn.innerText = 'No Carrinho';
+
+        // Mark term as queued
+        const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === term.toLowerCase());
+        if (termIndex !== -1) {
+            importedTerms[termIndex].status = 'queued';
+            renderTerms();
+        }
     } else {
         imageQueue.splice(index, 1);
         btn.classList.remove('added');
         btn.innerText = 'Adicionar à Fila';
+
+        checkTermQueueStatus(term);
     }
     updateQueueUI();
+}
+
+function checkTermQueueStatus(term) {
+    const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === term.toLowerCase());
+    if (termIndex !== -1) {
+        const stillHasImagesQueued = imageQueue.some(img => img.term.toLowerCase() === term.toLowerCase());
+        importedTerms[termIndex].status = stillHasImagesQueued ? 'queued' : 'searched';
+        renderTerms();
+    }
 }
 
 function updateQueueUI() {
@@ -143,7 +172,11 @@ function updateQueueUI() {
         const item = document.createElement('div');
         item.className = 'queue-item';
         item.innerHTML = `
-            <img src="${img.link}" alt="${img.title}">
+            <img src="${img.thumb}" alt="${img.title}">
+            <div class="queue-info">
+                <div class="queue-title">${img.title}</div>
+                <div class="queue-term">Termo: ${img.term}</div>
+            </div>
             <button class="remove-from-queue" onclick="removeFromQueue(${index})">×</button>
         `;
         queueItems.appendChild(item);
@@ -151,8 +184,12 @@ function updateQueueUI() {
 }
 
 function removeFromQueue(index) {
-    const link = imageQueue[index].link;
+    const item = imageQueue[index];
+    const link = item.link;
+    const term = item.term;
     imageQueue.splice(index, 1);
+
+    checkTermQueueStatus(term);
     updateQueueUI();
 
     // Atualizar botões na grade se visíveis
@@ -240,24 +277,56 @@ function handleFileUpload(e) {
 }
 
 function processTerms(terms) {
+    const uniqueTerms = [...new Set(terms.map(t => t.toString().trim()).filter(t => t))];
+
+    uniqueTerms.forEach(termText => {
+        if (!importedTerms.some(t => t.text === termText)) {
+            importedTerms.push({ text: termText, status: 'idle' });
+        }
+    });
+
+    renderTerms();
+}
+
+function renderTerms() {
     const termList = document.getElementById('termList');
     termList.innerHTML = '';
 
-    const uniqueTerms = [...new Set(terms.map(t => t.toString().trim()).filter(t => t))];
-
-    uniqueTerms.forEach(term => {
+    importedTerms.forEach((termObj, index) => {
         const item = document.createElement('div');
-        item.className = 'term-item';
+        item.className = `term-item status-${termObj.status}`;
         item.innerHTML = `
-            <span>${term}</span>
-            <button class="compact-btn" onclick="executeTermSearch('${term.replace(/'/g, "\\'")}')">Buscar</button>
+            <span contenteditable="true" onblur="updateTermText(${index}, this.innerText)" spellcheck="false" title="Clique para editar">${termObj.text}</span>
+            <div class="term-actions">
+                <button class="compact-btn" onclick="executeTermSearch(${index})">Buscar</button>
+                <button class="remove-term-btn" onclick="removeTerm(${index})">×</button>
+            </div>
         `;
         termList.appendChild(item);
     });
 }
 
-function executeTermSearch(term) {
-    document.getElementById('searchInput').value = term;
+function updateTermText(index, newText) {
+    newText = newText.trim();
+    if (newText) {
+        importedTerms[index].text = newText;
+    } else {
+        removeTerm(index);
+    }
+}
+
+function removeTerm(index) {
+    importedTerms.splice(index, 1);
+    renderTerms();
+}
+
+function executeTermSearch(index) {
+    const termObj = importedTerms[index];
+    if (termObj.status === 'idle') {
+        termObj.status = 'searched';
+    }
+    renderTerms();
+    document.getElementById('searchInput').value = termObj.text;
     startSearch();
 }
 
