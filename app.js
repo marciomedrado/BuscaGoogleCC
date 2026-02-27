@@ -45,6 +45,7 @@ const clearTermsBtn = document.getElementById('clearTermsBtn');
 const clearQueueBtn = document.getElementById('clearQueueBtn');
 
 let lastFindIndex = -1;
+let lastReviewScrollPos = 0;
 
 document.getElementById('findInput').addEventListener('input', () => {
     lastFindIndex = -1;
@@ -351,7 +352,7 @@ function enterReviewMode() {
         const queueImg = imageQueue[index];
 
         return `
-                <div class="review-row" id="review-row-${index}">
+                <div class="review-row">
                     <div class="review-cell cell-num">${termNum}</div>
                     <div class="review-cell cell-term">${termObj.text}</div>
                     <div class="review-cell cell-image" 
@@ -379,16 +380,11 @@ function enterReviewMode() {
         </div>
     `;
 
-    // Rola para a imagem que estava sendo revisada se houver um vínculo ativo
-    if (sourceTermIndex !== -1) {
+    // Restaurar posição de rolagem
+    if (lastReviewScrollPos > 0) {
         setTimeout(() => {
-            const row = document.getElementById(`review-row-${sourceTermIndex}`);
-            if (row) {
-                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                row.style.boxShadow = '0 0 15px rgba(56, 189, 248, 0.4)';
-                setTimeout(() => row.style.boxShadow = '', 2000);
-            }
-        }, 100);
+            window.scrollTo({ top: lastReviewScrollPos, behavior: 'auto' });
+        }, 50);
     }
 }
 
@@ -481,6 +477,8 @@ function handleReviewDrop(e, toIndex) {
 }
 
 function exitReviewMode() {
+    // Salvar posição de rolagem antes de sair
+    lastReviewScrollPos = window.scrollY;
     document.body.classList.remove('review-active');
 }
 
