@@ -17,7 +17,14 @@ async function performSearch(query) {
         return;
     }
 
-    resultsContainer.innerHTML = '<div class="placeholder-msg">Buscando imagens Creative Commons para: "' + query + '"...</div>';
+    // Mostrar Skeletons enquanto carrega
+    resultsContainer.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+        const skeletonCard = document.createElement('div');
+        skeletonCard.className = 'image-card skeleton';
+        skeletonCard.style.height = '350px';
+        resultsContainer.appendChild(skeletonCard);
+    }
 
     const url = `https://www.googleapis.com/customsearch/v1?key=${API_KEY}&cx=${SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}&searchType=image&rights=cc_publicdomain,cc_attribute,cc_sharealike,cc_noncommercial,cc_nonderived`;
 
@@ -25,10 +32,19 @@ async function performSearch(query) {
         const response = await fetch(url);
         const data = await response.json();
 
+        console.log('Resultados da API do Google:', data);
+
+        if (data.error) {
+            console.error('Erro da API do Google:', data.error.message);
+            resultsContainer.innerHTML = `<div class="placeholder-msg" style="color: #f87171;">❌ Erro da API: ${data.error.message}</div>`;
+            return;
+        }
+
         if (data.items && data.items.length > 0) {
             displayResults(data.items);
         } else {
-            resultsContainer.innerHTML = '<div class="placeholder-msg">Nenhuma imagem encontrada com licença CC para este termo.</div>';
+            console.log('Nenhum item retornado. Verifique se o "Image Search" está ativado no painel do Programmable Search Engine.');
+            resultsContainer.innerHTML = '<div class="placeholder-msg">Nenhuma imagem encontrada. Verifique se a "Pesquisa de Imagens" está ativada no seu painel do Google.</div>';
         }
     } catch (error) {
         console.error('Erro na busca:', error);
@@ -44,9 +60,12 @@ function displayResults(images) {
         const card = document.createElement('div');
         card.className = 'image-card';
         card.innerHTML = `
-            <img src="${img.link}" alt="${img.title}" loading="lazy">
+            <div class="image-container">
+                <span class="cc-badge">CC</span>
+                <img src="${img.link}" alt="${img.title}" loading="lazy">
+            </div>
             <div class="card-info">
-                <h3>${img.title.substring(0, 30)}${img.title.length > 30 ? '...' : ''}</h3>
+                <h3>${img.title}</h3>
                 <a href="${img.link}" target="_blank" class="download-btn">Ver Original</a>
             </div>
         `;
