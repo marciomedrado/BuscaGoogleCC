@@ -26,6 +26,11 @@
                         <button id="importBackupBtn" class="compact-btn" title="Importar Backup">Restaurar</button>
                     </div>
                     <input type="file" id="backupInput" accept=".json" style="display: none;">
+                    <div class="sidebar-actions"
+                        style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+                        <button id="toggleReviewModeBtn" class="compact-btn" style="background: #a855f7; color: white;"
+                            title="Ativar visão de conferência Lado a Lado">Modo Revisão</button>
+                    </div>
                     <button id="clearTermsBtn" class="danger-btn" style="display: none;"
                         title="Apagar todos os termos importados">Limpar</button>
                 </div>
@@ -53,6 +58,10 @@
                 <div class="placeholder-msg">Busque algo ou importe uma lista de termos.</div>
             </div>
 
+            <div id="reviewContainer" class="review-container" style="display: none;">
+                <!-- Tabela de revisão lado a lado aparecerá aqui -->
+            </div>
+
             <div id="loadMoreContainer" class="load-more-container"
                 style="display: none; text-align: center; margin-top: 2rem;">
                 <button id="loadMoreBtn" class="load-more-btn">+ Imagens</button>
@@ -75,13 +84,6 @@
             </div>
             <div id="queueItems" class="queue-items">
                 <!-- Itens da fila aparecerão aqui -->
-            </div>
-
-            <div class="queue-revision">
-                <h3>Resumo de <span>Termos</span></h3>
-                <div id="queueTermsList" class="queue-terms-list">
-                    <!-- Lista de termos usados na fila aparecerá aqui -->
-                </div>
             </div>
         </aside>
 

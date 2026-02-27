@@ -34,6 +34,8 @@ document.getElementById('importBackupBtn').addEventListener('click', () => {
 document.getElementById('backupInput').addEventListener('change', handleBackupImport);
 
 // Clear buttons
+document.getElementById('toggleReviewModeBtn').addEventListener('click', enterReviewMode);
+
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const clearTermsBtn = document.getElementById('clearTermsBtn');
@@ -296,23 +298,43 @@ function updateQueueUI() {
 
     // Atualiza a numeração nos termos importados
     renderTerms();
-    renderQueueTermsRevision();
 }
 
-function renderQueueTermsRevision() {
-    const queueTermsList = document.getElementById('queueTermsList');
-    if (!queueTermsList) return;
-
+function enterReviewMode() {
+    const container = document.getElementById('reviewContainer');
     const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
-    queueTermsList.innerHTML = '';
 
-    imageQueue.forEach((img, index) => {
-        const prefix = (index + startNum).toString().padStart(3, '0');
-        const div = document.createElement('div');
-        div.className = 'queue-term-revision-item';
-        div.innerHTML = `<span class="rev-prefix">${prefix}</span> <span class="rev-text">${img.term}</span>`;
-        queueTermsList.appendChild(div);
-    });
+    document.body.classList.add('review-active');
+    container.innerHTML = `
+        <div class="review-header-row">
+            <h2>Modo de Conferência Lado a Lado</h2>
+            <button class="btn-exit-review" onclick="exitReviewMode()">Sair do Modo Revisão</button>
+        </div>
+        <div class="review-table">
+            ${importedTerms.map((termObj, index) => {
+        const termNum = (index + startNum).toString().padStart(3, '0');
+        // Buscamos a imagem na mesma posição relativa da fila
+        const queueImg = imageQueue[index];
+
+        return `
+                <div class="review-row">
+                    <div class="review-cell cell-num">${termNum}</div>
+                    <div class="review-cell cell-term">${termObj.text}</div>
+                    <div class="review-cell cell-image">
+                        ${queueImg ? `<img src="${queueImg.thumb}" alt="">` : '<div style="color: #475569; font-size: 0.8rem; text-align: center;">(Nenhuma imagem)</div>'}
+                    </div>
+                    <div class="review-cell cell-actions" style="color: ${queueImg ? '#22c55e' : '#475569'}">
+                        ${queueImg ? '✓ OK' : '--'}
+                    </div>
+                </div>
+                `;
+    }).join('')}
+        </div>
+    `;
+}
+
+function exitReviewMode() {
+    document.body.classList.remove('review-active');
 }
 
 function removeFromQueue(index) {
