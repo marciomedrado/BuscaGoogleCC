@@ -5,6 +5,7 @@ let currentQuery = '';
 let currentOffset = 0;
 let imageQueue = [];
 let importedTerms = []; // Structure: { text: "term", status: "idle" | "searched" | "queued" }
+let sourceTermIndex = -1; // Rastreia qual termo importado originou a busca atual
 
 // Event Listeners
 document.getElementById('searchBtn').addEventListener('click', startSearch);
@@ -36,8 +37,10 @@ clearSearchBtn.addEventListener('click', () => {
     searchInput.value = '';
     clearSearchBtn.style.display = 'none';
     currentQuery = '';
+    sourceTermIndex = -1;
     document.getElementById('results').innerHTML = '<div class="placeholder-msg">Busca limpa. Busque algo ou importe uma lista de termos.</div>';
     document.getElementById('loadMoreContainer').style.display = 'none';
+    renderTerms();
 });
 
 clearTermsBtn.addEventListener('click', () => {
@@ -63,19 +66,36 @@ clearQueueBtn.addEventListener('click', () => {
 });
 
 function startSearch() {
-    const query = document.getElementById('searchInput').value;
+    const query = document.getElementById('searchInput').value.trim();
     if (query) {
         currentQuery = query;
         currentOffset = 0;
         document.getElementById('loadMoreContainer').style.display = 'none';
 
-        // Match term from imported list if it exists and update status
-        const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === query.toLowerCase());
-        if (termIndex !== -1 && importedTerms[termIndex].status === 'idle') {
-            importedTerms[termIndex].status = 'searched';
-            renderTerms();
+        // Se houver um termo de origem, verificamos se a busca ainda é relacionada
+        if (sourceTermIndex !== -1) {
+            const sourceText = importedTerms[sourceTermIndex].text.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            // Se a nova busca não contém o termo original nem o original contém a nova busca, quebramos o vínculo
+            if (!lowerQuery.includes(sourceText) && !sourceText.includes(lowerQuery)) {
+                sourceTermIndex = -1;
+            }
         }
 
+        // Se não houver vínculo, tentamos encontrar um novo match exato na lista
+        if (sourceTermIndex === -1) {
+            const termIdx = importedTerms.findIndex(t => t.text.toLowerCase() === query.toLowerCase());
+            if (termIdx !== -1) {
+                sourceTermIndex = termIdx;
+            }
+        }
+
+        // Atualiza status se encontrarmos um termo correspondente
+        if (sourceTermIndex !== -1 && importedTerms[sourceTermIndex].status === 'idle') {
+            importedTerms[sourceTermIndex].status = 'searched';
+        }
+
+        renderTerms();
         performSearch(query, currentOffset);
     }
 }
@@ -171,27 +191,36 @@ function toggleQueue(btn, link, thumb, title, term) {
     const index = imageQueue.findIndex(item => item.link === link);
     const searchInputVal = document.getElementById('searchInput').value.trim();
 
-    // Se o termo no input for diferente do termo original da busca (o usuário refinou a busca),
-    // usamos o termo do input para associar essa imagem na fila.
-    const activeTerm = (searchInputVal && searchInputVal.toLowerCase() !== term.toLowerCase()) ? searchInputVal : term;
+    // O termo ativo é o que está no input no momento do clique (considerando refinamento)
+    const activeTermText = searchInputVal || term;
 
     if (index === -1) {
-        imageQueue.push({ link, thumb, title, term: activeTerm });
+        imageQueue.push({ link, thumb, title, term: activeTermText });
         btn.classList.add('added');
         btn.innerText = 'No Carrinho';
 
-        // Mark term as queued if it's in our list
-        const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === activeTerm.toLowerCase());
-        if (termIndex !== -1) {
-            importedTerms[termIndex].status = 'queued';
+        // Prioridade 1: Usar o vínculo de origem (mesmo que a busca tenha mudado)
+        if (sourceTermIndex !== -1) {
+            importedTerms[sourceTermIndex].status = 'queued';
             renderTerms();
+        } else {
+            // Prioridade 2: Match exato com algum termo da lista
+            const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === activeTermText.toLowerCase());
+            if (termIndex !== -1) {
+                importedTerms[termIndex].status = 'queued';
+                renderTerms();
+            }
         }
     } else {
         imageQueue.splice(index, 1);
         btn.classList.remove('added');
         btn.innerText = 'Adicionar à Fila';
 
-        checkTermQueueStatus(term);
+        checkTermQueueStatus(activeTermText);
+        // Se houver vínculo de origem, checamos ele também
+        if (sourceTermIndex !== -1) {
+            checkTermQueueStatus(importedTerms[sourceTermIndex].text);
+        }
     }
     updateQueueUI();
 }
@@ -343,7 +372,8 @@ function renderTerms() {
 
     importedTerms.forEach((termObj, index) => {
         const item = document.createElement('div');
-        item.className = `term-item status-${termObj.status}`;
+        const isActive = index === sourceTermIndex;
+        item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''}`;
         item.innerHTML = `
             <div class="status-indicator" onclick="toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)"></div>
             <span contenteditable="true" onblur="updateTermText(${index}, this.innerText)" spellcheck="false" title="Clique para editar">${termObj.text}</span>
@@ -383,11 +413,11 @@ function removeTerm(index) {
 }
 
 function executeTermSearch(index) {
+    sourceTermIndex = index;
     const termObj = importedTerms[index];
     if (termObj.status === 'idle') {
         termObj.status = 'searched';
     }
-    renderTerms();
     document.getElementById('searchInput').value = termObj.text;
     startSearch();
 }
