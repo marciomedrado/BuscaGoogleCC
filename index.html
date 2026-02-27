@@ -43,6 +43,22 @@
                             title="Ativar visão de conferência Lado a Lado">Modo Revisão</button>
                     </div>
 
+                    <div class="auto-fill-container"
+                        style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
+                        <label
+                            style="font-size: 0.8rem; display: block; margin-bottom: 5px; color: var(--text-secondary);">Auto-Preencher
+                            Fila:</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="autoFillMode" class="small-input"
+                                style="flex: 1; font-size: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 4px;">
+                                <option value="first">Primeira Imagem</option>
+                                <option value="random">Imagem Aleatória</option>
+                            </select>
+                            <button id="autoFillBtn" class="compact-btn" style="background: #22c55e; color: white;"
+                                title="Preencher automaticamente espaços vazios">Rodar</button>
+                        </div>
+                    </div>
+
                     <div class="find-replace-container">
                         <input type="text" id="findInput" placeholder="Procurar termo...">
                         <input type="text" id="replaceInput" placeholder="Substituir por...">

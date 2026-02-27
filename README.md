@@ -16,3 +16,9 @@ Facilitar a busca por imagens que podem ser reutilizadas legalmente, utilizando 
 2. Importe uma lista de termos (xlsx, csv, docx, txt).
 3. Selecione as imagens para sua fila.
 4. Organize e baixe tudo em um único arquivo ZIP numerado.
+
+## Recursos Avançados
+- **Auto-Preencher Fila**: Preencha toda a sua pauta automaticamente com um clique.
+- **Localizar e Substituir**: Edite sua lista de termos rapidamente.
+- **Modo Revisão**: Conferência lado a lado para garantir que cada imagem corresponde ao termo correto.
+- **Alteração Rápida**: No Modo Revisão, o botão "Alterar busca" permite trocar a imagem de um termo específico sem perder o lugar.

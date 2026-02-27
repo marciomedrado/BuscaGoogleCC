@@ -37,6 +37,7 @@ document.getElementById('backupInput').addEventListener('change', handleBackupIm
 document.getElementById('toggleReviewModeBtn').addEventListener('click', enterReviewMode);
 document.getElementById('addTermTopBtn').addEventListener('click', () => addTermAtPosition(0));
 document.getElementById('startTermNumInput').addEventListener('input', renderTerms);
+document.getElementById('autoFillBtn').addEventListener('click', autoFillQueue);
 
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
@@ -187,7 +188,14 @@ function displayResults(images, append = false) {
     if (!append) resultsContainer.innerHTML = '';
 
     images.forEach(img => {
-        const isAdded = imageQueue.some(item => item.link === img.link);
+        // Verifica se esta imagem já está na fila (considerando o slot do termo se houver um selecionado)
+        let isAdded = false;
+        if (sourceTermIndex !== -1) {
+            isAdded = imageQueue[sourceTermIndex] && imageQueue[sourceTermIndex].link === img.link;
+        } else {
+            isAdded = imageQueue.some(item => item && item.link === img.link);
+        }
+
         const card = document.createElement('div');
         const safeTitle = img.title.replace(/'/g, "\\'");
         const safeQuery = currentQuery.replace(/'/g, "\\'");
@@ -218,40 +226,49 @@ function displayResults(images, append = false) {
 
 // Gerenciamento da Fila
 function toggleQueue(btn, link, thumb, title, term) {
-    const index = imageQueue.findIndex(item => item.link === link);
     const searchInputVal = document.getElementById('searchInput').value.trim();
-
-    // O termo ativo é o que está no input no momento do clique (considerando refinamento)
     const activeTermText = searchInputVal || term;
 
-    if (index === -1) {
-        imageQueue.push({ link, thumb, title, term: activeTermText });
-        btn.classList.add('added');
-        btn.innerText = 'No Carrinho';
+    if (sourceTermIndex !== -1) {
+        // Modo Vinculado: Substitui a imagem na mesma posição do termo
+        const existingImg = imageQueue[sourceTermIndex];
 
-        // Prioridade 1: Usar o vínculo de origem (mesmo que a busca tenha mudado)
-        if (sourceTermIndex !== -1) {
-            importedTerms[sourceTermIndex].status = 'queued';
-            renderTerms();
+        if (existingImg && existingImg.link === link) {
+            // Remove se clicar na mesma
+            imageQueue[sourceTermIndex] = null;
         } else {
-            // Prioridade 2: Match exato com algum termo da lista
-            const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === activeTermText.toLowerCase());
-            if (termIndex !== -1) {
-                importedTerms[termIndex].status = 'queued';
-                renderTerms();
-            }
+            // Garante que o array tenha espaço
+            while (imageQueue.length <= sourceTermIndex) imageQueue.push(null);
+
+            // Substitui
+            imageQueue[sourceTermIndex] = { link, thumb, title, term: importedTerms[sourceTermIndex].text };
+
+            // Remove a marcação 'added' de outros botões na grade, pois só um pode estar vinculado
+            document.querySelectorAll('.queue-btn.added').forEach(b => {
+                b.classList.remove('added');
+                b.innerText = 'Adicionar à Fila';
+            });
         }
     } else {
-        imageQueue.splice(index, 1);
-        btn.classList.remove('added');
-        btn.innerText = 'Adicionar à Fila';
-
-        checkTermQueueStatus(activeTermText);
-        // Se houver vínculo de origem, checamos ele também
-        if (sourceTermIndex !== -1) {
-            checkTermQueueStatus(importedTerms[sourceTermIndex].text);
+        // Modo Livre: Comportamento antigo de toggle por link
+        const index = imageQueue.findIndex(item => item && item.link === link);
+        if (index === -1) {
+            imageQueue.push({ link, thumb, title, term: activeTermText });
+        } else {
+            imageQueue.splice(index, 1);
         }
     }
+
+    // Sincroniza status dos termos
+    importedTerms.forEach((t, i) => {
+        if (imageQueue[i]) {
+            t.status = 'queued';
+        } else if (t.status === 'queued') {
+            t.status = 'searched';
+        }
+    });
+
+    renderTerms();
     updateQueueUI();
 }
 
@@ -269,9 +286,10 @@ function updateQueueUI() {
     const queueCount = document.getElementById('queueCount');
     const zipBtn = document.getElementById('downloadZipBtn');
 
-    queueCount.innerText = imageQueue.length;
-    zipBtn.disabled = imageQueue.length === 0;
-    clearQueueBtn.style.display = imageQueue.length > 0 ? 'block' : 'none';
+    const activeList = imageQueue.filter(Boolean);
+    queueCount.innerText = activeList.length;
+    zipBtn.disabled = activeList.length === 0;
+    clearQueueBtn.style.display = activeList.length > 0 ? 'block' : 'none';
 
     const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
     queueItems.innerHTML = '';
@@ -348,14 +366,81 @@ function enterReviewMode() {
                             </div>
                         ` : '<div style="color: #475569; font-size: 0.8rem; text-align: center; border: 1px dashed #475569; padding: 10px; border-radius: 5px;">(Vazio)</div>'}
                     </div>
-                    <div class="review-cell cell-actions" style="color: ${queueImg ? '#22c55e' : '#475569'}">
-                        ${queueImg ? '✓ OK' : '--'}
+                    <div class="review-cell cell-actions">
+                        <div style="color: ${queueImg ? '#22c55e' : '#475569'}; margin-bottom: 8px; font-weight: bold;">
+                            ${queueImg ? '✓ OK' : '--'}
+                        </div>
+                        <button class="compact-btn" style="background: #0ea5e9; color: white; font-size: 0.65rem; width: 100%;" 
+                                onclick="changeSearchFromReview(${index})">Alterar busca</button>
                     </div>
                 </div>
                 `;
     }).join('')}
         </div>
     `;
+}
+
+async function autoFillQueue() {
+    if (importedTerms.length === 0) return alert("Importe termos primeiro.");
+
+    const mode = document.getElementById('autoFillMode').value;
+    const btn = document.getElementById('autoFillBtn');
+    const originalText = btn.innerText;
+    btn.innerText = "...";
+    btn.disabled = true;
+
+    for (let i = 0; i < importedTerms.length; i++) {
+        // Só preenche se o slot estiver vazio
+        if (imageQueue[i]) continue;
+
+        const term = importedTerms[i].text;
+        const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term)}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`;
+
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.query && data.query.pages) {
+                const pages = Object.values(data.query.pages);
+                const results = pages.map(p => {
+                    const info = p.imageinfo ? p.imageinfo[0] : {};
+                    return {
+                        link: info.url,
+                        thumb: info.thumburl || info.url,
+                        title: p.title.replace(/^File:/, '').replace(/\.[^/.]+$/, "").replace(/_/g, ' '),
+                        term: term
+                    };
+                }).filter(img => img.link);
+
+                if (results.length > 0) {
+                    const selected = mode === 'first' ? results[0] : results[Math.floor(Math.random() * results.length)];
+                    imageQueue[i] = selected;
+                    importedTerms[i].status = 'queued';
+                }
+            }
+        } catch (e) {
+            console.error("Erro no auto-preenchimento:", term);
+        }
+
+        // Feedback visual a cada 3 itens
+        if (i % 3 === 0) {
+            renderTerms();
+            updateQueueUI();
+        }
+    }
+
+    renderTerms();
+    updateQueueUI();
+    btn.innerText = originalText;
+    btn.disabled = false;
+    alert("Processo concluído!");
+}
+
+function changeSearchFromReview(index) {
+    sourceTermIndex = index;
+    exitReviewMode();
+    const term = importedTerms[index].text;
+    document.getElementById('searchInput').value = term;
+    startSearch();
 }
 
 function handleReviewDragStart(e, index) {
@@ -389,11 +474,14 @@ function exitReviewMode() {
 
 function removeFromQueue(index) {
     const item = imageQueue[index];
-    const link = item.link;
-    const term = item.term;
-    imageQueue.splice(index, 1);
+    if (!item) return;
 
-    checkTermQueueStatus(term);
+    const link = item.link;
+    // Em vez de splice, limpamos o slot para manter a sincronia com a lista de termos
+    // Se o usuário estiver no modo revisão, ele espera que o card fique vazio, não que tudo suba
+    imageQueue[index] = null;
+
+    renderTerms();
     updateQueueUI();
 
     // Atualizar botões na grade se visíveis
@@ -536,9 +624,20 @@ function renderTerms(highlightIdx = -1) {
             item.classList.remove('drag-over');
             const fromIndex = parseInt(e.dataTransfer.getData('termIndex'));
             if (fromIndex !== index) {
-                const moved = importedTerms.splice(fromIndex, 1)[0];
-                importedTerms.splice(index, 0, moved);
+                // Move o termo
+                const movedTerm = importedTerms.splice(fromIndex, 1)[0];
+                importedTerms.splice(index, 0, movedTerm);
+
+                // Sincroniza a imagem na fila se houver
+                if (imageQueue[fromIndex] !== undefined) {
+                    const movedImg = imageQueue.splice(fromIndex, 1)[0];
+                    imageQueue.splice(index, 0, movedImg);
+                    // Atualiza o vínculo do termo na imagem movida
+                    if (imageQueue[index]) imageQueue[index].term = importedTerms[index].text;
+                }
+
                 renderTerms();
+                updateQueueUI();
             }
         };
 
