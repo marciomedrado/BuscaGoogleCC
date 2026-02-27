@@ -429,7 +429,7 @@ async function downloadQueueAsZip() {
         const url = window.URL.createObjectURL(content);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `busca_google_cc_${new Date().getTime()}.zip`;
+        a.download = `busca_creative_commons_${new Date().getTime()}.zip`;
         a.click();
     } catch (e) { alert('Erro ao gerar o ZIP.'); }
 
@@ -603,7 +603,7 @@ function exportBackup() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `backup_busca_google_cc_${new Date().getTime()}.json`;
+    a.download = `backup_busca_creative_commons_${new Date().getTime()}.json`;
     a.click();
     window.URL.revokeObjectURL(url);
 }
