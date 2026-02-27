@@ -35,6 +35,8 @@ document.getElementById('backupInput').addEventListener('change', handleBackupIm
 
 // Clear buttons
 document.getElementById('toggleReviewModeBtn').addEventListener('click', enterReviewMode);
+document.getElementById('addTermTopBtn').addEventListener('click', () => addTermAtPosition(0));
+document.getElementById('startTermNumInput').addEventListener('input', renderTerms);
 
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
@@ -448,12 +450,19 @@ function renderTerms() {
     const termList = document.getElementById('termList');
     termList.innerHTML = '';
 
+    const startTermNum = parseInt(document.getElementById('startTermNumInput').value) || 1;
     clearTermsBtn.style.display = importedTerms.length > 0 ? 'inline-block' : 'none';
 
     importedTerms.forEach((termObj, index) => {
+        // Marcador para adicionar entre
+        const spacer = document.createElement('div');
+        spacer.className = 'add-term-between';
+        spacer.onclick = () => addTermAtPosition(index);
+        termList.appendChild(spacer);
+
         const item = document.createElement('div');
         const isActive = index === sourceTermIndex;
-        const termNum = (index + 1).toString().padStart(3, '0');
+        const termNum = (index + startTermNum).toString().padStart(3, '0');
 
         // Encontra a primeira posição deste termo na fila
         const firstQueueIdx = imageQueue.findIndex(img => img.term.toLowerCase() === termObj.text.toLowerCase());
@@ -461,19 +470,51 @@ function renderTerms() {
         const posLabel = firstQueueIdx !== -1 ? `#${(firstQueueIdx + startNum).toString().padStart(3, '0')}` : '';
 
         item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''}`;
+        item.setAttribute('draggable', 'true');
+
+        // Term drag events
+        item.ondragstart = (e) => { e.dataTransfer.setData('termIndex', index); item.classList.add('dragging'); };
+        item.ondragend = () => { item.classList.remove('dragging'); };
+        item.ondragover = (e) => { e.preventDefault(); item.classList.add('drag-over'); };
+        item.ondragleave = () => { item.classList.remove('drag-over'); };
+        item.ondrop = (e) => {
+            e.preventDefault();
+            item.classList.remove('drag-over');
+            const fromIndex = parseInt(e.dataTransfer.getData('termIndex'));
+            if (fromIndex !== index) {
+                const moved = importedTerms.splice(fromIndex, 1)[0];
+                importedTerms.splice(index, 0, moved);
+                renderTerms();
+            }
+        };
+
         item.innerHTML = `
             <div class="term-index-hint">${termNum}</div>
-            <div class="status-indicator" onclick="toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)">
+            <div class="status-indicator" onclick="event.stopPropagation(); toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)">
                 ${posLabel ? `<span class="pos-num">${posLabel}</span>` : ''}
             </div>
             <span contenteditable="true" onblur="updateTermText(${index}, this.innerText)" spellcheck="false" title="Clique para editar">${termObj.text}</span>
             <div class="term-actions">
-                <button class="compact-btn" onclick="executeTermSearch(${index})">Buscar</button>
-                <button class="remove-term-btn" onclick="removeTerm(${index})">×</button>
+                <button class="compact-btn" onclick="event.stopPropagation(); executeTermSearch(${index})">Buscar</button>
+                <button class="remove-term-btn" onclick="event.stopPropagation(); removeTerm(${index})">×</button>
             </div>
         `;
         termList.appendChild(item);
     });
+
+    // Marcador final
+    const finalSpacer = document.createElement('div');
+    finalSpacer.className = 'add-term-between';
+    finalSpacer.onclick = () => addTermAtPosition(importedTerms.length);
+    termList.appendChild(finalSpacer);
+}
+
+function addTermAtPosition(index) {
+    const text = prompt("Digite o novo termo:");
+    if (text && text.trim()) {
+        importedTerms.splice(index, 0, { text: text.trim(), status: 'idle' });
+        renderTerms();
+    }
 }
 
 function toggleTermStatusManual(index) {

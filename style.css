@@ -93,11 +93,59 @@ body {
     padding: 0.8rem 0.8rem 0.8rem 0.5rem;
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
     border-left: 4px solid transparent;
     position: relative;
     padding-left: 2rem;
-    /* Espaço para o index hint */
+    cursor: grab;
+}
+
+.term-item.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+
+.term-item.drag-over {
+    border: 2px dashed var(--accent-color);
+}
+
+.add-term-between {
+    height: 4px;
+    background: transparent;
+    margin: -2px 0;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+}
+
+.add-term-between:hover {
+    background: var(--accent-color);
+    height: 10px;
+    margin: -5px 0;
+}
+
+.add-term-between::after {
+    content: "+";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--accent-color);
+    color: var(--bg-color);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0;
+}
+
+.add-term-between:hover::after {
+    opacity: 1;
 }
 
 .term-index-hint {

@@ -21,6 +21,17 @@
                 <div class="import-controls">
                     <label for="fileInput" class="custom-file-upload">Selecionar Arquivo</label>
                     <input type="file" id="fileInput" accept=".xlsx,.csv,.doc,.docx,.txt,.md">
+
+                    <div class="terms-config"
+                        style="margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem;">
+                        <label for="startTermNumInput">Iniciar em:</label>
+                        <input type="number" id="startTermNumInput" value="1" min="1" class="small-input"
+                            style="width: 50px;">
+                        <button id="addTermTopBtn" class="compact-btn"
+                            style="background: #22c55e; color: white; margin-left: auto;"
+                            title="Adicionar termo no topo">+ Termo</button>
+                    </div>
+
                     <div class="backup-restaurar-btns">
                         <button id="exportBackupBtn" class="compact-btn" title="Exportar Backup">Backup</button>
                         <button id="importBackupBtn" class="compact-btn" title="Importar Backup">Restaurar</button>
