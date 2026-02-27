@@ -1,6 +1,6 @@
 // Configurações - VOCÊ PRECISARÁ PREENCHER ESTAS DUAS VARIÁVEIS
-const API_KEY = 'AIzaSyDYOWNSNZbon21wkDvUyb2qRHaSZOrKkBQ';
-const SEARCH_ENGINE_ID = 'd0ff45975366f4284';
+const API_KEY = 'AIzaSyDcjPlLkhS_-MVawxBko237vfbIxzbBNSQ';
+const SEARCH_ENGINE_ID = '727ab586a542842ea';
 
 document.getElementById('searchBtn').addEventListener('click', () => {
     const query = document.getElementById('searchInput').value;
