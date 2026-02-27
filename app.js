@@ -296,6 +296,23 @@ function updateQueueUI() {
 
     // Atualiza a numeração nos termos importados
     renderTerms();
+    renderQueueTermsRevision();
+}
+
+function renderQueueTermsRevision() {
+    const queueTermsList = document.getElementById('queueTermsList');
+    if (!queueTermsList) return;
+
+    const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
+    queueTermsList.innerHTML = '';
+
+    imageQueue.forEach((img, index) => {
+        const prefix = (index + startNum).toString().padStart(3, '0');
+        const div = document.createElement('div');
+        div.className = 'queue-term-revision-item';
+        div.innerHTML = `<span class="rev-prefix">${prefix}</span> <span class="rev-text">${img.term}</span>`;
+        queueTermsList.appendChild(div);
+    });
 }
 
 function removeFromQueue(index) {
@@ -414,6 +431,7 @@ function renderTerms() {
     importedTerms.forEach((termObj, index) => {
         const item = document.createElement('div');
         const isActive = index === sourceTermIndex;
+        const termNum = (index + 1).toString().padStart(3, '0');
 
         // Encontra a primeira posição deste termo na fila
         const firstQueueIdx = imageQueue.findIndex(img => img.term.toLowerCase() === termObj.text.toLowerCase());
@@ -422,6 +440,7 @@ function renderTerms() {
 
         item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''}`;
         item.innerHTML = `
+            <div class="term-index-hint">${termNum}</div>
             <div class="status-indicator" onclick="toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)">
                 ${posLabel ? `<span class="pos-num">${posLabel}</span>` : ''}
             </div>

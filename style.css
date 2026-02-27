@@ -96,6 +96,19 @@ body {
     transition: background 0.2s;
     border-left: 4px solid transparent;
     position: relative;
+    padding-left: 2rem;
+    /* Espaço para o index hint */
+}
+
+.term-index-hint {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    font-weight: bold;
 }
 
 .status-indicator {
@@ -323,6 +336,58 @@ body {
 .download-zip-btn:disabled {
     opacity: 0.3;
     pointer-events: none;
+}
+
+.queue-items {
+    max-height: 60%;
+}
+
+.queue-revision {
+    border-top: 1px solid var(--glass-border);
+    padding-top: 1.5rem;
+    margin-top: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.queue-revision h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+}
+
+.queue-revision h3 span {
+    color: var(--accent-color);
+}
+
+.queue-terms-list {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+.queue-term-revision-item {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rev-prefix {
+    color: var(--accent-color);
+    font-weight: bold;
+    min-width: 30px;
+}
+
+.rev-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
 }
 
 .queue-actions {
