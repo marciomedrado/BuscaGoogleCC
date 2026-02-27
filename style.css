@@ -198,25 +198,68 @@ header h1 {
     columns: 3;
     column-gap: 1.5rem;
     display: block;
-    /* Sobrescreve o grid anterior */
+    width: 100%;
 }
 
-.masonry .image-card {
+@media (max-width: 1200px) {
+    .results-grid.masonry {
+        columns: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .results-grid.masonry {
+        columns: 1;
+    }
+}
+
+.image-card {
     display: inline-block;
     width: 100%;
     margin-bottom: 1.5rem;
     vertical-align: top;
+    background: var(--card-bg);
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    break-inside: avoid;
+    /* Importante para Masonry não quebrar o card no meio */
 }
 
-.masonry .image-container {
-    height: auto;
-    /* Permite altura variável */
-    max-height: 600px;
+.image-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-color);
 }
 
-.masonry .image-card img {
+.image-container {
+    position: relative;
+    width: 100%;
     height: auto;
-    max-height: none;
+    background: #1e293b;
+    line-height: 0;
+    /* Remove espaço extra abaixo da imagem */
+}
+
+.image-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    /* Garante que a imagem não seja cortada */
+}
+
+.card-info {
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.card-info h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .queue-btn {
