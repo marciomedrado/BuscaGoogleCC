@@ -127,6 +127,9 @@ body {
 .term-item span:focus {
     border-bottom: 1px solid var(--accent-color);
     background: rgba(0, 0, 0, 0.2);
+    overflow: visible;
+    white-space: normal;
+    word-break: break-all;
 }
 
 .term-actions {
@@ -227,6 +230,7 @@ body {
 .download-zip-btn {
     width: 100%;
     margin-top: 1rem;
+    margin-bottom: 0.5rem;
     padding: 0.8rem;
     background: var(--accent-color);
     color: var(--bg-color);
@@ -239,6 +243,35 @@ body {
 .download-zip-btn:disabled {
     opacity: 0.3;
     pointer-events: none;
+}
+
+.queue-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.danger-btn {
+    background: rgba(248, 113, 113, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 0.5rem;
+    padding: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.8rem;
+    text-align: center;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.danger-btn:hover {
+    background: rgba(248, 113, 113, 0.3);
+    color: #fff;
+}
+
+.import-controls .danger-btn {
+    margin-top: 0.5rem;
 }
 
 /* Área Principal - Main Content */
@@ -348,6 +381,45 @@ header h1 {
     border-color: #22c55e;
 }
 
+.search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.1rem;
+    outline: none;
+    padding: 0.5rem;
+}
+
+.clear-search-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    transition: color 0.2s;
+}
+
+.clear-search-btn:hover {
+    color: #f87171;
+}
+
+.search-box button#searchBtn {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-box button#searchBtn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+}
 
 /* Load More Button */
 .load-more-btn {

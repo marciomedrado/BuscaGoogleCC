@@ -22,6 +22,46 @@ document.getElementById('loadMoreBtn').addEventListener('click', () => {
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 document.getElementById('downloadZipBtn').addEventListener('click', downloadQueueAsZip);
 
+// Clear buttons
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+const clearTermsBtn = document.getElementById('clearTermsBtn');
+const clearQueueBtn = document.getElementById('clearQueueBtn');
+
+searchInput.addEventListener('input', () => {
+    clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
+});
+
+clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    clearSearchBtn.style.display = 'none';
+    currentQuery = '';
+    document.getElementById('results').innerHTML = '<div class="placeholder-msg">Busca limpa. Busque algo ou importe uma lista de termos.</div>';
+    document.getElementById('loadMoreContainer').style.display = 'none';
+});
+
+clearTermsBtn.addEventListener('click', () => {
+    if (confirm("Deseja listar todos os termos importados?")) {
+        importedTerms = [];
+        renderTerms();
+    }
+});
+
+clearQueueBtn.addEventListener('click', () => {
+    if (confirm("Deseja esvaziar a fila de download?")) {
+        imageQueue = [];
+        importedTerms.forEach(t => t.status = t.status === 'queued' ? 'searched' : t.status);
+        renderTerms();
+        updateQueueUI();
+
+        // Reset added buttons in the grid if any
+        document.querySelectorAll('.queue-btn.added').forEach(btn => {
+            btn.classList.remove('added');
+            btn.innerText = 'Adicionar à Fila';
+        });
+    }
+});
+
 function startSearch() {
     const query = document.getElementById('searchInput').value;
     if (query) {
@@ -166,6 +206,7 @@ function updateQueueUI() {
 
     queueCount.innerText = imageQueue.length;
     zipBtn.disabled = imageQueue.length === 0;
+    clearQueueBtn.style.display = imageQueue.length > 0 ? 'block' : 'none';
 
     queueItems.innerHTML = '';
     imageQueue.forEach((img, index) => {
@@ -291,6 +332,8 @@ function processTerms(terms) {
 function renderTerms() {
     const termList = document.getElementById('termList');
     termList.innerHTML = '';
+
+    clearTermsBtn.style.display = importedTerms.length > 0 ? 'inline-block' : 'none';
 
     importedTerms.forEach((termObj, index) => {
         const item = document.createElement('div');

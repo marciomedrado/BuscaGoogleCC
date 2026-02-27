@@ -21,6 +21,8 @@
                 <div class="import-controls">
                     <label for="fileInput" class="custom-file-upload">Selecionar Arquivo</label>
                     <input type="file" id="fileInput" accept=".xlsx,.csv,.doc,.docx,.txt,.md">
+                    <button id="clearTermsBtn" class="danger-btn" style="display: none;"
+                        title="Apagar todos os termos importados">Limpar</button>
                 </div>
             </div>
             <div id="termList" class="term-list">
@@ -36,6 +38,8 @@
 
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="O que você está procurando?">
+                <button id="clearSearchBtn" class="clear-search-btn" title="Limpar busca"
+                    style="display: none;">&times;</button>
                 <button id="searchBtn">Buscar</button>
             </div>
 
@@ -54,7 +58,11 @@
         <aside class="queue-panel">
             <div class="queue-header">
                 <h2>Minha <span>Fila</span> <span id="queueCount" class="badge">0</span></h2>
-                <button id="downloadZipBtn" class="download-zip-btn" disabled>Baixar ZIP</button>
+                <div class="queue-actions">
+                    <button id="downloadZipBtn" class="download-zip-btn" disabled>Baixar ZIP</button>
+                    <button id="clearQueueBtn" class="danger-btn" style="display: none;"
+                        title="Esvaziar toda a fila">Limpar Fila</button>
+                </div>
             </div>
             <div id="queueItems" class="queue-items">
                 <!-- Itens da fila aparecerão aqui -->
