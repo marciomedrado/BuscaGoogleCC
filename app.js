@@ -26,6 +26,13 @@ document.getElementById('startNumInput').addEventListener('input', () => {
     updateQueueUI();
 });
 
+// Backup e Restauração
+document.getElementById('exportBackupBtn').addEventListener('click', exportBackup);
+document.getElementById('importBackupBtn').addEventListener('click', () => {
+    document.getElementById('backupInput').click();
+});
+document.getElementById('backupInput').addEventListener('change', handleBackupImport);
+
 // Clear buttons
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
@@ -114,7 +121,7 @@ async function performSearch(query, offset = 0, isLoadMore = false) {
         }
     }
 
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=16&gsroffset=${offset}&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=400&format=json&origin=*`;
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=16&gsroffset=${offset}&prop=imageinfo&iiprop=url|descriptionurl|extmetadata&iiurlwidth=400&format=json&origin=*`;
 
     try {
         const response = await fetch(url);
@@ -126,7 +133,13 @@ async function performSearch(query, offset = 0, isLoadMore = false) {
                 const info = page.imageinfo ? page.imageinfo[0] : {};
                 const license = info.extmetadata?.LicenseShortName?.value || 'CC BY-SA';
                 const cleanTitle = page.title.replace(/^File:/, '').replace(/\.[^/.]+$/, "").replace(/_/g, ' ');
-                return { link: info.url, thumb: info.thumburl || info.url, title: cleanTitle, license: license };
+                return {
+                    link: info.url,
+                    thumb: info.thumburl || info.url,
+                    title: cleanTitle,
+                    license: license,
+                    source: info.descriptionurl || `https://commons.wikimedia.org/wiki/${page.title}`
+                };
             }).filter(img => img.link && !img.link.endsWith('.ogg') && !img.link.endsWith('.webm'));
 
             if (images.length > 0) {
@@ -171,6 +184,9 @@ function displayResults(images, append = false) {
                 <div class="actions-container">
                     <button class="queue-btn ${isAdded ? 'added' : ''}" onclick="toggleQueue(this, '${img.link}', '${img.thumb}', '${safeTitle}', '${safeQuery}')">
                         ${isAdded ? 'No Carrinho' : 'Adicionar à Fila'}
+                    </button>
+                    <button class="source-link-btn" onclick="window.open('${img.source}', '_blank')" title="Ver Origem">
+                        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
                     </button>
                     <button class="direct-download-btn" onclick="downloadImage('${img.link}', '${safeTitle}')" title="Baixar Imagem">
                         <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -453,6 +469,57 @@ function executeTermSearch(index) {
     }
     document.getElementById('searchInput').value = termObj.text;
     startSearch();
+}
+
+// Backup e Restauração
+function exportBackup() {
+    const backupData = {
+        version: "1.0",
+        date: new Date().toISOString(),
+        importedTerms: importedTerms,
+        imageQueue: imageQueue,
+        sourceTermIndex: sourceTermIndex,
+        startNum: document.getElementById('startNumInput').value
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_busca_google_cc_${new Date().getTime()}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function handleBackupImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        try {
+            const data = JSON.parse(event.target.result);
+            if (data.importedTerms && Array.isArray(data.importedTerms)) {
+                importedTerms = data.importedTerms;
+                imageQueue = data.imageQueue || [];
+                sourceTermIndex = data.sourceTermIndex !== undefined ? data.sourceTermIndex : -1;
+
+                if (data.startNum) {
+                    document.getElementById('startNumInput').value = data.startNum;
+                }
+
+                renderTerms();
+                updateQueueUI();
+                alert('Backup restaurado com sucesso!');
+            } else {
+                alert('O arquivo de backup parece inválido.');
+            }
+        } catch (err) {
+            alert('Erro ao processar o arquivo de backup.');
+        }
+        e.target.value = ''; // Reset input
+    };
+    reader.readAsText(file);
 }
 
 // Botão Voltar ao Topo

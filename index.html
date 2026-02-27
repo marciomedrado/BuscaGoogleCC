@@ -21,6 +21,11 @@
                 <div class="import-controls">
                     <label for="fileInput" class="custom-file-upload">Selecionar Arquivo</label>
                     <input type="file" id="fileInput" accept=".xlsx,.csv,.doc,.docx,.txt,.md">
+                    <div class="backup-restaurar-btns">
+                        <button id="exportBackupBtn" class="compact-btn" title="Exportar Backup">Backup</button>
+                        <button id="importBackupBtn" class="compact-btn" title="Importar Backup">Restaurar</button>
+                    </div>
+                    <input type="file" id="backupInput" accept=".json" style="display: none;">
                     <button id="clearTermsBtn" class="danger-btn" style="display: none;"
                         title="Apagar todos os termos importados">Limpar</button>
                 </div>
