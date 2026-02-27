@@ -72,15 +72,8 @@ function startSearch() {
         currentOffset = 0;
         document.getElementById('loadMoreContainer').style.display = 'none';
 
-        // Se houver um termo de origem, verificamos se a busca ainda é relacionada
-        if (sourceTermIndex !== -1) {
-            const sourceText = importedTerms[sourceTermIndex].text.toLowerCase();
-            const lowerQuery = query.toLowerCase();
-            // Se a nova busca não contém o termo original nem o original contém a nova busca, quebramos o vínculo
-            if (!lowerQuery.includes(sourceText) && !sourceText.includes(lowerQuery)) {
-                sourceTermIndex = -1;
-            }
-        }
+        // Se houver vínculo de origem, mantemos ele independentemente do texto de busca
+        // A menos que o campo de busca seja limpo manualmente via botão X (já tratado no clearSearchBtn)
 
         // Se não houver vínculo, tentamos encontrar um novo match exato na lista
         if (sourceTermIndex === -1) {
@@ -247,16 +240,42 @@ function updateQueueUI() {
     imageQueue.forEach((img, index) => {
         const item = document.createElement('div');
         item.className = 'queue-item';
+        item.setAttribute('draggable', 'true');
+        item.dataset.index = index;
+
+        // Drag events
+        item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', index); item.classList.add('dragging'); };
+        item.ondragend = () => { item.classList.remove('dragging'); };
+        item.ondragover = (e) => { e.preventDefault(); item.classList.add('drag-over'); };
+        item.ondragleave = () => { item.classList.remove('drag-over'); };
+        item.ondrop = (e) => {
+            e.preventDefault();
+            item.classList.remove('drag-over');
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const toIndex = index;
+            if (fromIndex !== toIndex) {
+                const movedItem = imageQueue.splice(fromIndex, 1)[0];
+                imageQueue.splice(toIndex, 0, movedItem);
+                updateQueueUI();
+            }
+        };
+
+        const prefix = (index + 1).toString().padStart(3, '0');
         item.innerHTML = `
+            <div class="queue-prefix">${prefix}</div>
             <img src="${img.thumb}" alt="${img.title}">
             <div class="queue-info">
                 <div class="queue-title">${img.title}</div>
                 <div class="queue-term">Termo: ${img.term}</div>
             </div>
+            <div class="drag-handle" title="Arraste para mover">⋮⋮</div>
             <button class="remove-from-queue" onclick="removeFromQueue(${index})">×</button>
         `;
         queueItems.appendChild(item);
     });
+
+    // Atualiza a numeração nos termos importados
+    renderTerms();
 }
 
 function removeFromQueue(index) {
@@ -373,9 +392,16 @@ function renderTerms() {
     importedTerms.forEach((termObj, index) => {
         const item = document.createElement('div');
         const isActive = index === sourceTermIndex;
+
+        // Encontra a primeira posição deste termo na fila
+        const firstQueueIdx = imageQueue.findIndex(img => img.term.toLowerCase() === termObj.text.toLowerCase());
+        const posLabel = firstQueueIdx !== -1 ? `#${(firstQueueIdx + 1).toString().padStart(3, '0')}` : '';
+
         item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''}`;
         item.innerHTML = `
-            <div class="status-indicator" onclick="toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)"></div>
+            <div class="status-indicator" onclick="toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)">
+                ${posLabel ? `<span class="pos-num">${posLabel}</span>` : ''}
+            </div>
             <span contenteditable="true" onblur="updateTermText(${index}, this.innerText)" spellcheck="false" title="Clique para editar">${termObj.text}</span>
             <div class="term-actions">
                 <button class="compact-btn" onclick="executeTermSearch(${index})">Buscar</button>
