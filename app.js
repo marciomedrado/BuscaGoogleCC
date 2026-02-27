@@ -45,7 +45,13 @@ const clearQueueBtn = document.getElementById('clearQueueBtn');
 
 let lastFindIndex = -1;
 
-document.getElementById('replaceNextBtn').addEventListener('click', findAndReplaceNext);
+document.getElementById('findInput').addEventListener('input', () => {
+    lastFindIndex = -1;
+    renderTerms();
+});
+
+document.getElementById('findBtn').addEventListener('click', findNextTerm);
+document.getElementById('replaceNextBtn').addEventListener('click', replaceCurrentTerm);
 document.getElementById('replaceAllBtn').addEventListener('click', findAndReplaceAll);
 
 searchInput.addEventListener('input', () => {
@@ -486,9 +492,14 @@ function processTerms(terms) {
     renderTerms();
 }
 
-function renderTerms() {
+function renderTerms(highlightIdx = -1) {
     const termList = document.getElementById('termList');
     termList.innerHTML = '';
+
+    // Esconde o botão de substituir se não houver um destaque ativo ou se mudou a busca
+    if (highlightIdx === -1) {
+        document.getElementById('replaceNextBtn').style.display = 'none';
+    }
 
     const startTermNum = parseInt(document.getElementById('startTermNumInput').value) || 1;
     clearTermsBtn.style.display = importedTerms.length > 0 ? 'inline-block' : 'none';
@@ -509,7 +520,7 @@ function renderTerms() {
         const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
         const posLabel = firstQueueIdx !== -1 ? `#${(firstQueueIdx + startNum).toString().padStart(3, '0')}` : '';
 
-        item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''}`;
+        item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''} ${index === highlightIdx ? 'found-highlight' : ''}`;
         item.setAttribute('draggable', 'true');
 
         // Term drag events
@@ -540,6 +551,10 @@ function renderTerms() {
             </div>
         `;
         termList.appendChild(item);
+
+        if (index === highlightIdx) {
+            setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
     });
 
     // Marcador final
@@ -645,23 +660,33 @@ function handleBackupImport(e) {
 }
 
 // Localizar e Substituir
-function findAndReplaceNext() {
+function findNextTerm() {
     const findText = document.getElementById('findInput').value.trim();
-    const replaceText = document.getElementById('replaceInput').value.trim();
     if (!findText) return;
 
     for (let i = lastFindIndex + 1; i < importedTerms.length; i++) {
         if (importedTerms[i].text.includes(findText)) {
-            importedTerms[i].text = importedTerms[i].text.replace(findText, replaceText);
             lastFindIndex = i;
-            renderTerms();
+            renderTerms(i);
+            document.getElementById('replaceNextBtn').style.display = 'inline-block';
             return;
         }
     }
 
-    // Se não encontrou do ponto atual, tentar do início (opcional) ou resetar
+    // Se não encontrou, volta ao início e avisa
     lastFindIndex = -1;
     alert("Nenhuma ocorrência encontrada.");
+    renderTerms();
+}
+
+function replaceCurrentTerm() {
+    const findText = document.getElementById('findInput').value.trim();
+    const replaceText = document.getElementById('replaceInput').value.trim();
+
+    if (lastFindIndex !== -1 && importedTerms[lastFindIndex]) {
+        importedTerms[lastFindIndex].text = importedTerms[lastFindIndex].text.replace(findText, replaceText);
+        renderTerms(lastFindIndex); // Mantém o destaque para ver a mudança
+    }
 }
 
 function findAndReplaceAll() {
