@@ -504,17 +504,38 @@ function removeFromQueue(index) {
 }
 
 // Download de Imagens e ZIP
+function getExtensionFromUrl(url) {
+    let ext = 'jpg';
+    try {
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/');
+        const lastPart = pathParts[pathParts.length - 1];
+        const parts = lastPart.split('.');
+        if (parts.length > 1) {
+            ext = parts[parts.length - 1].toLowerCase();
+        }
+    } catch (e) { }
+    if (ext === 'jpeg') ext = 'jpg';
+    return ext;
+}
+
 async function downloadImage(url, title) {
     try {
         const response = await fetch(url);
+        if (!response.ok) throw new Error('HTTP error');
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = blobUrl;
-        a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}.jpg`;
+
+        const ext = getExtensionFromUrl(url);
+        a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}.${ext}`;
+
         a.click();
         window.URL.revokeObjectURL(blobUrl);
-    } catch (e) { alert('Erro no download direto.'); }
+    } catch (e) {
+        alert('Erro no download direto da imagem. Verifique a conexão ou tente outra imagem.');
+    }
 }
 
 async function downloadQueueAsZip() {
@@ -530,20 +551,41 @@ async function downloadQueueAsZip() {
         for (let i = 0; i < imageQueue.length; i++) {
             const img = imageQueue[i];
             if (!img) continue; // Pula se não houver imagem nessa posição
+
             const originalName = img.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
             const prefix = (i + startNum).toString().padStart(3, '0');
-            const name = `${prefix}_${originalName}.jpg`;
-            const response = await fetch(img.link);
-            const blob = await response.blob();
-            zip.file(name, blob);
+            const ext = getExtensionFromUrl(img.link);
+            const name = `${prefix}_${originalName}.${ext}`;
+
+            try {
+                const response = await fetch(img.link);
+                if (!response.ok) throw new Error('Network error on main link');
+                const blob = await response.blob();
+                zip.file(name, blob);
+            } catch (errMain) {
+                console.warn(`Erro ao baixar a imagem principal ${img.link}. Tentando miniatura...`);
+                try {
+                    const fallbackResponse = await fetch(img.thumb);
+                    if (!fallbackResponse.ok) throw new Error('Network error on thumb');
+                    const blob = await fallbackResponse.blob();
+                    // Salva a miniatura na mesma extensão (wiki costuma gerar thumb em jpg ou png)
+                    zip.file(name, blob);
+                } catch (errThumb) {
+                    console.error(`Falha ao baixar imagem: ${img.title}`);
+                    zip.file(`${name}_ERRO.txt`, "Não foi possível fazer o download desta imagem da Wikipedia/Wikimedia.");
+                }
+            }
         }
+
         const content = await zip.generateAsync({ type: "blob" });
         const url = window.URL.createObjectURL(content);
         const a = document.createElement('a');
         a.href = url;
         a.download = `busca_creative_commons_${new Date().getTime()}.zip`;
         a.click();
-    } catch (e) { alert('Erro ao gerar o ZIP.'); }
+    } catch (e) {
+        alert('Erro fatal ao gerar o ZIP: ' + e.message);
+    }
 
     btn.innerText = originalText;
     btn.disabled = false;
