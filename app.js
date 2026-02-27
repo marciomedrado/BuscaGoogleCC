@@ -339,6 +339,7 @@ function renderTerms() {
         const item = document.createElement('div');
         item.className = `term-item status-${termObj.status}`;
         item.innerHTML = `
+            <div class="status-indicator" onclick="toggleTermStatusManual(${index})" title="Mudar status manualmente (Azul -> Verde -> Idle)"></div>
             <span contenteditable="true" onblur="updateTermText(${index}, this.innerText)" spellcheck="false" title="Clique para editar">${termObj.text}</span>
             <div class="term-actions">
                 <button class="compact-btn" onclick="executeTermSearch(${index})">Buscar</button>
@@ -347,6 +348,18 @@ function renderTerms() {
         `;
         termList.appendChild(item);
     });
+}
+
+function toggleTermStatusManual(index) {
+    const term = importedTerms[index];
+    if (term.status === 'idle') {
+        term.status = 'searched';
+    } else if (term.status === 'searched') {
+        term.status = 'queued';
+    } else if (term.status === 'queued') {
+        term.status = 'idle';
+    }
+    renderTerms();
 }
 
 function updateTermText(index, newText) {
