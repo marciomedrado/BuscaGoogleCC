@@ -4,7 +4,12 @@
 let currentQuery = '';
 let currentOffset = 0;
 
-document.getElementById('searchBtn').addEventListener('click', () => {
+document.getElementById('searchBtn').addEventListener('click', startSearch);
+document.getElementById('searchInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startSearch();
+});
+
+function startSearch() {
     const query = document.getElementById('searchInput').value;
     if (query) {
         currentQuery = query;
@@ -12,7 +17,7 @@ document.getElementById('searchBtn').addEventListener('click', () => {
         document.getElementById('loadMoreContainer').style.display = 'none';
         performSearch(query, currentOffset);
     }
-});
+}
 
 document.getElementById('loadMoreBtn').addEventListener('click', () => {
     if (currentQuery) {
@@ -141,3 +146,17 @@ async function downloadImage(url, title) {
         alert('Não foi possível fazer o download direto. Use o botão "Ver Original".');
     }
 }
+
+// Botão Voltar ao Topo
+const backToTopBtn = document.getElementById('backToTop');
+window.onscroll = function () {
+    if (document.body.scrollTop > 500 || document.documentElement.scrollTop > 500) {
+        backToTopBtn.style.display = "flex";
+    } else {
+        backToTopBtn.style.display = "none";
+    }
+};
+
+backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
