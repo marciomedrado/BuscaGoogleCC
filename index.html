@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BuscaGoogleCC - Imagens Creative Commons</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="dark-mode">
     <div class="container">
         <header>
@@ -23,6 +25,11 @@
                 <!-- Imagens aparecerão aqui -->
                 <div class="placeholder-msg">Digite algo para começar a busca.</div>
             </div>
+
+            <div id="loadMoreContainer" class="load-more-container"
+                style="display: none; text-align: center; margin-top: 2rem;">
+                <button id="loadMoreBtn" class="load-more-btn">+ Imagens</button>
+            </div>
         </main>
 
         <footer>
@@ -31,4 +38,5 @@
     </div>
     <script src="app.js"></script>
 </body>
+
 </html>
