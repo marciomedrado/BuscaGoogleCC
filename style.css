@@ -832,12 +832,30 @@ body.review-active {
     padding-left: 2rem;
 }
 
+.cell-image {
+    width: 200px;
+    padding: 0.5rem;
+    cursor: grab;
+    transition: background 0.2s, transform 0.2s;
+    border-radius: 0.5rem;
+}
+
+.cell-image:active {
+    cursor: grabbing;
+}
+
+.cell-image:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
 .cell-image img {
     width: 100%;
-    height: 100px;
+    height: 120px;
     object-fit: cover;
     border-radius: 0.5rem;
     display: block;
+    pointer-events: none;
+    /* Evita que a imagem interfira no drag do container */
 }
 
 .btn-exit-review {

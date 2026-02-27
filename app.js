@@ -262,6 +262,7 @@ function updateQueueUI() {
     const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
     queueItems.innerHTML = '';
     imageQueue.forEach((img, index) => {
+        if (!img) return; // Pula slots vazios
         const item = document.createElement('div');
         item.className = 'queue-item';
         item.setAttribute('draggable', 'true');
@@ -315,15 +316,23 @@ function enterReviewMode() {
         <div class="review-table">
             ${importedTerms.map((termObj, index) => {
         const termNum = (index + startNum).toString().padStart(3, '0');
-        // Buscamos a imagem na mesma posição relativa da fila
         const queueImg = imageQueue[index];
 
         return `
                 <div class="review-row">
                     <div class="review-cell cell-num">${termNum}</div>
                     <div class="review-cell cell-term">${termObj.text}</div>
-                    <div class="review-cell cell-image">
-                        ${queueImg ? `<img src="${queueImg.thumb}" alt="">` : '<div style="color: #475569; font-size: 0.8rem; text-align: center;">(Nenhuma imagem)</div>'}
+                    <div class="review-cell cell-image" 
+                         ${queueImg ? `draggable="true" ondragstart="handleReviewDragStart(event, ${index})"` : ''}
+                         ondragover="event.preventDefault(); this.style.background='rgba(56, 189, 248, 0.1)'"
+                         ondragleave="this.style.background=''"
+                         ondrop="handleReviewDrop(event, ${index})">
+                        ${queueImg ? `
+                            <img src="${queueImg.thumb}" alt="" title="Arraste para trocar de posição">
+                            <div style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${queueImg.title}
+                            </div>
+                        ` : '<div style="color: #475569; font-size: 0.8rem; text-align: center; border: 1px dashed #475569; padding: 10px; border-radius: 5px;">(Vazio)</div>'}
                     </div>
                     <div class="review-cell cell-actions" style="color: ${queueImg ? '#22c55e' : '#475569'}">
                         ${queueImg ? '✓ OK' : '--'}
@@ -333,6 +342,31 @@ function enterReviewMode() {
     }).join('')}
         </div>
     `;
+}
+
+function handleReviewDragStart(e, index) {
+    e.dataTransfer.setData('reviewImageIndex', index);
+}
+
+function handleReviewDrop(e, toIndex) {
+    e.preventDefault();
+    e.currentTarget.style.background = '';
+    const fromIndex = parseInt(e.dataTransfer.getData('reviewImageIndex'));
+
+    if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+        // Swap implementation
+        const temp = imageQueue[fromIndex];
+        imageQueue[fromIndex] = imageQueue[toIndex];
+        imageQueue[toIndex] = temp;
+
+        // Atualiza o vínculo do termo para que os status (verde/azul) fiquem corretos na nova posição
+        if (imageQueue[fromIndex]) imageQueue[fromIndex].term = importedTerms[fromIndex].text;
+        if (imageQueue[toIndex]) imageQueue[toIndex].term = importedTerms[toIndex].text;
+
+        // Atualiza a UI geral e a própria revisão
+        updateQueueUI();
+        enterReviewMode();
+    }
 }
 
 function exitReviewMode() {
@@ -383,6 +417,7 @@ async function downloadQueueAsZip() {
     try {
         for (let i = 0; i < imageQueue.length; i++) {
             const img = imageQueue[i];
+            if (!img) continue; // Pula se não houver imagem nessa posição
             const originalName = img.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
             const prefix = (i + startNum).toString().padStart(3, '0');
             const name = `${prefix}_${originalName}.jpg`;
