@@ -188,7 +188,9 @@ async function downloadQueueAsZip() {
     try {
         for (let i = 0; i < imageQueue.length; i++) {
             const img = imageQueue[i];
-            const name = `${img.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}.jpg`;
+            const originalName = img.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+            const prefix = (i + 1).toString().padStart(3, '0');
+            const name = `${prefix}_${originalName}.jpg`;
             const response = await fetch(img.link);
             const blob = await response.blob();
             zip.file(name, blob);
