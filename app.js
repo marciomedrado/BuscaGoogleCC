@@ -169,13 +169,19 @@ function displayResults(images, append = false) {
 // Gerenciamento da Fila
 function toggleQueue(btn, link, thumb, title, term) {
     const index = imageQueue.findIndex(item => item.link === link);
+    const searchInputVal = document.getElementById('searchInput').value.trim();
+
+    // Se o termo no input for diferente do termo original da busca (o usuário refinou a busca),
+    // usamos o termo do input para associar essa imagem na fila.
+    const activeTerm = (searchInputVal && searchInputVal.toLowerCase() !== term.toLowerCase()) ? searchInputVal : term;
+
     if (index === -1) {
-        imageQueue.push({ link, thumb, title, term });
+        imageQueue.push({ link, thumb, title, term: activeTerm });
         btn.classList.add('added');
         btn.innerText = 'No Carrinho';
 
-        // Mark term as queued
-        const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === term.toLowerCase());
+        // Mark term as queued if it's in our list
+        const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === activeTerm.toLowerCase());
         if (termIndex !== -1) {
             importedTerms[termIndex].status = 'queued';
             renderTerms();
