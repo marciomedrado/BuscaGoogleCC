@@ -6,24 +6,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BuscaGoogleCC - Imagens Creative Commons</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 
 <body class="dark-mode">
-    <div class="container">
-        <header>
-            <h1>BuscaGoogle<span>CC</span></h1>
-            <p>Encontre imagens com licença Creative Commons rapidamente.</p>
-        </header>
+    <div class="app-layout">
+        <!-- Barra Lateral de Importação e Termos -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Importar <span>Termos</span></h2>
+                <div class="import-controls">
+                    <label for="fileInput" class="custom-file-upload">Selecionar Arquivo</label>
+                    <input type="file" id="fileInput" accept=".xlsx,.csv,.doc,.docx,.txt,.md">
+                </div>
+            </div>
+            <div id="termList" class="term-list">
+                <!-- Termos aparecerão aqui -->
+            </div>
+        </aside>
 
-        <main>
+        <!-- Área Principal de Busca -->
+        <main class="main-content">
+            <header>
+                <h1>BuscaGoogle<span>CC</span></h1>
+            </header>
+
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="O que você está procurando?">
                 <button id="searchBtn">Buscar</button>
             </div>
 
-            <div id="results" class="results-grid">
+            <div id="results" class="results-grid masonry">
                 <!-- Imagens aparecerão aqui -->
-                <div class="placeholder-msg">Digite algo para começar a busca.</div>
+                <div class="placeholder-msg">Busque algo ou importe uma lista de termos.</div>
             </div>
 
             <div id="loadMoreContainer" class="load-more-container"
@@ -31,6 +49,17 @@
                 <button id="loadMoreBtn" class="load-more-btn">+ Imagens</button>
             </div>
         </main>
+
+        <!-- Barra de Fila à Direita -->
+        <aside class="queue-panel">
+            <div class="queue-header">
+                <h2>Minha <span>Fila</span> <span id="queueCount" class="badge">0</span></h2>
+                <button id="downloadZipBtn" class="download-zip-btn" disabled>Baixar ZIP</button>
+            </div>
+            <div id="queueItems" class="queue-items">
+                <!-- Itens da fila aparecerão aqui -->
+            </div>
+        </aside>
 
         <footer>
             <p>&copy; 2024 BuscaGoogleCC - Feito com ✨</p>
