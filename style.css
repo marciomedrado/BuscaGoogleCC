@@ -318,6 +318,25 @@ body {
     width: 100%;
 }
 
+.queue-config {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.small-input {
+    width: 60px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    outline: none;
+}
+
 .danger-btn {
     background: rgba(248, 113, 113, 0.1);
     color: #fca5a5;

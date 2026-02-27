@@ -22,6 +22,9 @@ document.getElementById('loadMoreBtn').addEventListener('click', () => {
 
 document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 document.getElementById('downloadZipBtn').addEventListener('click', downloadQueueAsZip);
+document.getElementById('startNumInput').addEventListener('input', () => {
+    updateQueueUI();
+});
 
 // Clear buttons
 const searchInput = document.getElementById('searchInput');
@@ -236,6 +239,7 @@ function updateQueueUI() {
     zipBtn.disabled = imageQueue.length === 0;
     clearQueueBtn.style.display = imageQueue.length > 0 ? 'block' : 'none';
 
+    const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
     queueItems.innerHTML = '';
     imageQueue.forEach((img, index) => {
         const item = document.createElement('div');
@@ -260,7 +264,7 @@ function updateQueueUI() {
             }
         };
 
-        const prefix = (index + 1).toString().padStart(3, '0');
+        const prefix = (index + startNum).toString().padStart(3, '0');
         item.innerHTML = `
             <div class="queue-prefix">${prefix}</div>
             <img src="${img.thumb}" alt="${img.title}">
@@ -313,6 +317,8 @@ async function downloadImage(url, title) {
 async function downloadQueueAsZip() {
     const zip = new JSZip();
     const btn = document.getElementById('downloadZipBtn');
+    const startNumInput = document.getElementById('startNumInput');
+    const startNum = parseInt(startNumInput.value) || 1;
     const originalText = btn.innerText;
     btn.innerText = 'Gerando ZIP...';
     btn.disabled = true;
@@ -321,7 +327,7 @@ async function downloadQueueAsZip() {
         for (let i = 0; i < imageQueue.length; i++) {
             const img = imageQueue[i];
             const originalName = img.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-            const prefix = (i + 1).toString().padStart(3, '0');
+            const prefix = (i + startNum).toString().padStart(3, '0');
             const name = `${prefix}_${originalName}.jpg`;
             const response = await fetch(img.link);
             const blob = await response.blob();
@@ -395,7 +401,8 @@ function renderTerms() {
 
         // Encontra a primeira posição deste termo na fila
         const firstQueueIdx = imageQueue.findIndex(img => img.term.toLowerCase() === termObj.text.toLowerCase());
-        const posLabel = firstQueueIdx !== -1 ? `#${(firstQueueIdx + 1).toString().padStart(3, '0')}` : '';
+        const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
+        const posLabel = firstQueueIdx !== -1 ? `#${(firstQueueIdx + startNum).toString().padStart(3, '0')}` : '';
 
         item.className = `term-item status-${termObj.status} ${isActive ? 'active-source' : ''}`;
         item.innerHTML = `
