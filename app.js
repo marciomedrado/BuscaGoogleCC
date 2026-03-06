@@ -276,7 +276,7 @@ function toggleQueue(btn, link, thumb, title, term) {
 function checkTermQueueStatus(term) {
     const termIndex = importedTerms.findIndex(t => t.text.toLowerCase() === term.toLowerCase());
     if (termIndex !== -1) {
-        const stillHasImagesQueued = imageQueue.some(img => img.term.toLowerCase() === term.toLowerCase());
+        const stillHasImagesQueued = imageQueue.some(img => img && img.term && img.term.toLowerCase() === term.toLowerCase());
         importedTerms[termIndex].status = stillHasImagesQueued ? 'queued' : 'searched';
         renderTerms();
     }
@@ -371,8 +371,10 @@ function enterReviewMode() {
                         <div style="color: ${queueImg ? '#22c55e' : '#475569'}; margin-bottom: 8px; font-weight: bold;">
                             ${queueImg ? '✓ OK' : '--'}
                         </div>
-                        <button class="compact-btn" style="background: #0ea5e9; color: white; font-size: 0.65rem; width: 100%;" 
+                        <button class="compact-btn" style="background: #0ea5e9; color: white; font-size: 0.65rem; width: 100%; margin-bottom: 4px;" 
                                 onclick="changeSearchFromReview(${index})">Alterar busca</button>
+                        <button class="compact-btn" style="background: #ef4444; color: white; font-size: 0.65rem; width: 100%;" 
+                                onclick="removeRowFromReview(${index})" title="Excluir este termo e sua imagem">✕ Excluir</button>
                     </div>
                 </div>
                 `;
@@ -388,59 +390,111 @@ function enterReviewMode() {
     }
 }
 
+function removeRowFromReview(index) {
+    const termText = importedTerms[index] ? `"${importedTerms[index].text}"` : `#${index + 1}`;
+    if (!confirm(`Excluir o termo ${termText} e sua imagem? Tudo será renumerado.`)) return;
+
+    // Salva posição de rolagem atual da revisão
+    lastReviewScrollPos = window.scrollY;
+
+    // Remove termo e imagem correspondente (splice mantém numeração sequencial)
+    importedTerms.splice(index, 1);
+    imageQueue.splice(index, 1);
+
+    // Ajusta o índice do termo ativo se necessário
+    if (sourceTermIndex === index) {
+        sourceTermIndex = -1;
+    } else if (sourceTermIndex > index) {
+        sourceTermIndex--;
+    }
+
+    // Atualiza a UI
+    updateQueueUI();
+    enterReviewMode(); // Re-renderiza o modo revisão já renumerado
+}
+
 async function autoFillQueue() {
     if (importedTerms.length === 0) return alert("Importe termos primeiro.");
 
     const mode = document.getElementById('autoFillMode').value;
     const btn = document.getElementById('autoFillBtn');
     const originalText = btn.innerText;
-    btn.innerText = "...";
     btn.disabled = true;
 
-    for (let i = 0; i < importedTerms.length; i++) {
-        // Só preenche se o slot estiver vazio
-        if (imageQueue[i]) continue;
+    // Identifica quais slots precisam de preenchimento
+    const pendingIndexes = importedTerms
+        .map((_, i) => i)
+        .filter(i => !imageQueue[i]);
 
+    const total = pendingIndexes.length;
+    let done = 0;
+    let errors = 0;
+
+    for (const i of pendingIndexes) {
         const term = importedTerms[i].text;
+        btn.innerText = `Buscando... ${done + 1}/${total}`;
+
         const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term)}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`;
 
-        try {
-            const resp = await fetch(url);
-            const data = await resp.json();
-            if (data.query && data.query.pages) {
-                const pages = Object.values(data.query.pages);
-                const results = pages.map(p => {
-                    const info = p.imageinfo ? p.imageinfo[0] : {};
-                    return {
-                        link: info.url,
-                        thumb: info.thumburl || info.url,
-                        title: p.title.replace(/^File:/, '').replace(/\.[^/.]+$/, "").replace(/_/g, ' '),
-                        term: term
-                    };
-                }).filter(img => img.link);
-
-                if (results.length > 0) {
-                    const selected = mode === 'first' ? results[0] : results[Math.floor(Math.random() * results.length)];
-                    imageQueue[i] = selected;
-                    importedTerms[i].status = 'queued';
+        let success = false;
+        // Tenta até 3 vezes em caso de erro de rede ou throttling
+        for (let attempt = 0; attempt < 3 && !success; attempt++) {
+            try {
+                if (attempt > 0) {
+                    // Espera progressiva antes de retry: 2s, 4s
+                    await new Promise(r => setTimeout(r, attempt * 2000));
                 }
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+
+                if (data.query && data.query.pages) {
+                    const pages = Object.values(data.query.pages);
+                    const results = pages.map(p => {
+                        const info = p.imageinfo ? p.imageinfo[0] : {};
+                        return {
+                            link: info.url,
+                            thumb: info.thumburl || info.url,
+                            title: p.title.replace(/^File:/, '').replace(/\.[^/.]+$/, "").replace(/_/g, ' '),
+                            term: term
+                        };
+                    }).filter(img => img.link && !img.link.endsWith('.ogg') && !img.link.endsWith('.webm'));
+
+                    if (results.length > 0) {
+                        const selected = mode === 'first' ? results[0] : results[Math.floor(Math.random() * results.length)];
+                        imageQueue[i] = selected;
+                        importedTerms[i].status = 'queued';
+                    }
+                }
+                success = true;
+            } catch (e) {
+                console.warn(`Tentativa ${attempt + 1} falhou para "${term}":`, e.message);
+                if (attempt === 2) errors++;
             }
-        } catch (e) {
-            console.error("Erro no auto-preenchimento:", term);
         }
 
-        // Feedback visual a cada 3 itens
-        if (i % 3 === 0) {
+        done++;
+
+        // Feedback visual a cada 5 itens
+        if (done % 5 === 0) {
             renderTerms();
             updateQueueUI();
         }
+
+        // Pausa entre requisições para não sobrecarregar a API (300ms)
+        await new Promise(r => setTimeout(r, 300));
     }
 
     renderTerms();
     updateQueueUI();
     btn.innerText = originalText;
     btn.disabled = false;
-    alert("Processo concluído!");
+
+    if (errors > 0) {
+        alert(`Processo concluído! ${done - errors} de ${total} termos preenchidos. ${errors} falhas após 3 tentativas.`);
+    } else {
+        alert(`Processo concluído! ${done} de ${total} termos preenchidos.`);
+    }
 }
 
 function changeSearchFromReview(index) {
@@ -593,43 +647,60 @@ async function downloadQueueAsZip() {
 
 // Importação de Termos
 function handleFileUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-    const extension = file.name.split('.').pop().toLowerCase();
-    const reader = new FileReader();
+    // Ordena os arquivos pelo nome em ordem alfabética
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
-    reader.onload = function (event) {
-        if (extension === 'xlsx') {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            processTerms(json.flat().filter(t => t));
-        } else if (extension === 'docx' || extension === 'doc') {
-            mammoth.extractRawText({ arrayBuffer: event.target.result })
-                .then(result => processTerms(result.value.split('\n')));
+    // Lê e processa cada arquivo em sequência (preservando a ordem dos nomes)
+    let chain = Promise.resolve();
+    files.forEach(file => {
+        chain = chain.then(() => readFileAsTerms(file).then(terms => processTerms(terms)));
+    });
+
+    chain.catch(err => console.error('Erro ao importar arquivos:', err));
+}
+
+function readFileAsTerms(file) {
+    return new Promise((resolve, reject) => {
+        const extension = file.name.split('.').pop().toLowerCase();
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+            try {
+                if (extension === 'xlsx') {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    resolve(json.flat().filter(t => t));
+                } else if (extension === 'docx' || extension === 'doc') {
+                    mammoth.extractRawText({ arrayBuffer: event.target.result })
+                        .then(result => resolve(result.value.split('\n')))
+                        .catch(reject);
+                } else {
+                    // txt, md, csv
+                    resolve(event.target.result.split(/\r?\n|;/));
+                }
+            } catch (err) {
+                reject(err);
+            }
+        };
+
+        reader.onerror = reject;
+
+        if (extension === 'xlsx' || extension === 'docx' || extension === 'doc') {
+            reader.readAsArrayBuffer(file);
         } else {
-            // txt, md, csv
-            const text = event.target.result;
-            processTerms(text.split(/\r?\n|;/));
+            reader.readAsText(file);
         }
-    };
-
-    if (extension === 'xlsx' || extension === 'docx' || extension === 'doc') {
-        reader.readAsArrayBuffer(file);
-    } else {
-        reader.readAsText(file);
-    }
+    });
 }
 
 function processTerms(terms) {
-    const uniqueTerms = [...new Set(terms.map(t => t.toString().trim()).filter(t => t))];
-
-    uniqueTerms.forEach(termText => {
-        if (!importedTerms.some(t => t.text === termText)) {
-            importedTerms.push({ text: termText, status: 'idle' });
-        }
+    terms.map(t => t.toString().trim()).filter(t => t).forEach(termText => {
+        importedTerms.push({ text: termText, status: 'idle' });
     });
 
     renderTerms();
@@ -658,8 +729,8 @@ function renderTerms(highlightIdx = -1) {
         const isActive = index === sourceTermIndex;
         const termNum = (index + startTermNum).toString().padStart(3, '0');
 
-        // Encontra a primeira posição deste termo na fila
-        const firstQueueIdx = imageQueue.findIndex(img => img.term.toLowerCase() === termObj.text.toLowerCase());
+        // Encontra a primeira posição deste termo na fila (null-safe)
+        const firstQueueIdx = imageQueue.findIndex(img => img && img.term && img.term.toLowerCase() === termObj.text.toLowerCase());
         const startNum = parseInt(document.getElementById('startNumInput').value) || 1;
         const posLabel = firstQueueIdx !== -1 ? `#${(firstQueueIdx + startNum).toString().padStart(3, '0')}` : '';
 
@@ -749,7 +820,16 @@ function updateTermText(index, newText) {
 
 function removeTerm(index) {
     importedTerms.splice(index, 1);
+    // Remove a imagem correspondente da fila para manter numeração sincronizada
+    imageQueue.splice(index, 1);
+    // Ajusta o índice do termo ativo se necessário
+    if (sourceTermIndex === index) {
+        sourceTermIndex = -1;
+    } else if (sourceTermIndex > index) {
+        sourceTermIndex--;
+    }
     renderTerms();
+    updateQueueUI();
 }
 
 function executeTermSearch(index) {
