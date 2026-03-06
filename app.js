@@ -39,6 +39,32 @@ document.getElementById('addTermTopBtn').addEventListener('click', () => addTerm
 document.getElementById('startTermNumInput').addEventListener('input', renderTerms);
 document.getElementById('autoFillBtn').addEventListener('click', autoFillQueue);
 
+// Lógica de Navegação Mobile
+const sidebar = document.querySelector('.sidebar');
+const queuePanel = document.querySelector('.queue-panel');
+const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+
+function showMobileSection(sectionId) {
+    sidebar.classList.remove('show');
+    queuePanel.classList.remove('show');
+    mobileNavBtns.forEach(btn => btn.classList.remove('active'));
+
+    if (sectionId === 'toggleSidebar') {
+        sidebar.classList.add('show');
+        document.getElementById('toggleSidebar').classList.add('active');
+    } else if (sectionId === 'toggleQueue') {
+        queuePanel.classList.add('show');
+        document.getElementById('toggleQueue').classList.add('active');
+    } else {
+        document.getElementById('showSearch').classList.add('active');
+    }
+}
+
+document.getElementById('toggleSidebar').addEventListener('click', () => showMobileSection('toggleSidebar'));
+document.getElementById('showSearch').addEventListener('click', () => showMobileSection('showSearch'));
+document.getElementById('toggleQueue').addEventListener('click', () => showMobileSection('toggleQueue'));
+
+
 const searchInput = document.getElementById('searchInput');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const clearTermsBtn = document.getElementById('clearTermsBtn');
@@ -502,6 +528,12 @@ function changeSearchFromReview(index) {
     exitReviewMode();
     const term = importedTerms[index].text;
     document.getElementById('searchInput').value = term;
+
+    // Switch to search view on mobile if needed
+    if (window.innerWidth <= 900) {
+        showMobileSection('showSearch');
+    }
+
     startSearch();
 }
 
@@ -839,6 +871,12 @@ function executeTermSearch(index) {
         termObj.status = 'searched';
     }
     document.getElementById('searchInput').value = termObj.text;
+
+    // Switch to search view on mobile if needed
+    if (window.innerWidth <= 900) {
+        showMobileSection('showSearch');
+    }
+
     startSearch();
 }
 

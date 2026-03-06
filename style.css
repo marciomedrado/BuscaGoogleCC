@@ -860,3 +860,119 @@ body.review-active {
 .btn-exit-review:hover {
     opacity: 0.8;
 }
+
+/* Mobile Styles */
+.mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--card-bg);
+    border-top: 1px solid var(--glass-border);
+    z-index: 1000;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+}
+
+.mobile-nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.mobile-nav-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.mobile-nav-btn span {
+    font-size: 0.65rem;
+}
+
+.mobile-nav-btn.active {
+    color: var(--accent-color);
+}
+
+@media (max-width: 900px) {
+    .mobile-nav {
+        display: flex;
+    }
+
+    .app-layout {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 60px);
+        /* Espaço para nav mobile */
+        display: block;
+        overflow-y: auto;
+    }
+
+    .sidebar,
+    .queue-panel {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 60px);
+        z-index: 900;
+        background: var(--bg-color);
+        padding: 1rem;
+    }
+
+    .sidebar.show,
+    .queue-panel.show {
+        display: flex;
+    }
+
+    .main-content {
+        padding: 1rem;
+        width: 100%;
+        min-height: calc(100vh - 60px);
+    }
+
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    .results-grid.masonry {
+        columns: 2;
+    }
+
+    .search-box {
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .search-box button#searchBtn {
+        padding: 0.8rem 1rem;
+        min-width: 80px;
+    }
+}
+
+@media (max-width: 600px) {
+    .results-grid.masonry {
+        columns: 1;
+    }
+
+    .review-row {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        padding: 1rem;
+    }
+
+    .cell-actions {
+        display: flex;
+        flex-direction: row !important;
+        gap: 10px;
+        margin-top: 10px;
+    }
+}
